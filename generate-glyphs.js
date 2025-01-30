@@ -2,8 +2,8 @@
 
 // generateGlyphs Convert local fonts TTF/OTF to glyph PBF ranges
 // This script scans `src/` for .ttf/.otf files, determines the actual
-// codepoints in each font, dynamically creates 256-sized ranges, then
-// generates .pbf glyphs.
+// codepoints in each font, dynamically creates 256-sized ranges up to 65535,
+// then generates .pbf glyphs.
 //
 // Parameters:
 // - none: none
@@ -16,44 +16,32 @@ const path = require('path');
 const fontnik = require('fontnik');
 const fontkit = require('fontkit');
 
-// // generateDynamicRangesFromFont Reads the TTF/OTF buffer using fontkit,
-// finds the min and max codepoints, then returns an array of [start, end] blocks
-// of size 256.
-//
-// Parameters:
-// - fontBuffer: Buffer  The raw TTF/OTF content
-//
-// Returns:
-// - ranges: number[][] An array of [start, end] for each 256-block
 function generateDynamicRangesFromFont(fontBuffer) {
-  // Open with fontkit
   const font = fontkit.create(fontBuffer);
-  
-  // Get all codepoints in this font
-  // (characterSet is an array of codepoints)
   const charSet = font.characterSet;
   if (!charSet || charSet.length === 0) {
-    // No glyphs found, return an empty list
     return [];
   }
 
-  // Determine min and max
   const minCP = Math.min(...charSet);
   const maxCP = Math.max(...charSet);
 
-  // Build 256-chunk ranges from minCP to maxCP
+  // Borne maxCP à 65535 pour éviter l'erreur
+  const limitedMax = Math.min(maxCP, 65535);
+
   const rangeSize = 256;
   const ranges = [];
 
-  // Start from the 256 boundary below minCP
   let start = minCP - (minCP % rangeSize);
   if (start < 0) {
-    // Ensure start isn't negative if the font has no negative codepoints
     start = 0;
   }
 
-  while (start <= maxCP) {
-    const end = start + rangeSize - 1;
+  while (start <= limitedMax) {
+    let end = start + rangeSize - 1;
+    if (end > 65535) {
+      end = 65535;
+    }
     ranges.push([start, end]);
     start += rangeSize;
   }
@@ -61,13 +49,6 @@ function generateDynamicRangesFromFont(fontBuffer) {
   return ranges;
 }
 
-// // walkDirectory Recursively walks `dir` to find .ttf / .otf files.
-//
-// Parameters:
-// - dir: string Directory path
-//
-// Returns:
-// - filesList: string[] List of found TTF/OTF file paths
 function walkDirectory(dir) {
   let results = [];
   const list = fs.readdirSync(dir);
@@ -86,15 +67,6 @@ function walkDirectory(dir) {
   return results;
 }
 
-// // generateGlyphsFromFonts Walks the `srcDir`, then for each font file
-// determines the dynamic ranges, then calls fontnik.range() to create the PBF.
-//
-// Parameters:
-// - srcDir: string   The source dir containing TTF/OTF
-// - distDir: string  Destination for the .pbf outputs
-//
-// Returns:
-// - none: none
 function generateGlyphsFromFonts(srcDir, distDir) {
   if (!fs.existsSync(distDir)) {
     fs.mkdirSync(distDir, { recursive: true });
@@ -107,21 +79,18 @@ function generateGlyphsFromFonts(srcDir, distDir) {
     console.log(`\n🔎 Processing: ${fontFile}`);
     const fontData = fs.readFileSync(fontFile);
 
-    // Create dynamic ranges
     const dynamicRanges = generateDynamicRangesFromFont(fontData);
     if (dynamicRanges.length === 0) {
       console.warn(`No codepoints found in this font. Skipping.`);
       return;
     }
 
-    // Name subfolder from the file name
     const fontName = path.basename(fontFile, path.extname(fontFile));
     const fontDestDir = path.join(distDir, fontName);
     if (!fs.existsSync(fontDestDir)) {
       fs.mkdirSync(fontDestDir, { recursive: true });
     }
 
-    // Generate each glyph range
     dynamicRanges.forEach(([start, end]) => {
       fontnik.range({ font: fontData, start, end }, (err, pbf) => {
         if (err) {
@@ -136,10 +105,8 @@ function generateGlyphsFromFonts(srcDir, distDir) {
   });
 }
 
-// Script entry point
 (() => {
   const SRC_DIR = path.join(__dirname, 'src');
   const DIST_DIR = path.join(__dirname, 'dist', 'fonts');
-
   generateGlyphsFromFonts(SRC_DIR, DIST_DIR);
 })();
