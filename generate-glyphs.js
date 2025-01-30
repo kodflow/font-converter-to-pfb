@@ -3,7 +3,9 @@
 // generateGlyphs Convert local fonts TTF/OTF to glyph PBF ranges
 // This script scans `src/` for .ttf/.otf files, determines the actual
 // codepoints in each font, dynamically creates 256-sized ranges up to 65535,
-// then generates .pbf glyphs.
+// then generates .pbf glyphs in dist/fonts.
+//
+// It also cleans dist/fonts before rebuilding.
 //
 // Parameters:
 // - none: none
@@ -16,6 +18,14 @@ const path = require('path');
 const fontnik = require('fontnik');
 const fontkit = require('fontkit');
 
+function cleanDist(distDir) {
+  // fs.rmSync est dispo depuis Node 14.14
+  if (fs.existsSync(distDir)) {
+    console.log(`\n🧹 Cleaning existing dist folder: ${distDir}`);
+    fs.rmSync(distDir, { recursive: true, force: true });
+  }
+}
+
 function generateDynamicRangesFromFont(fontBuffer) {
   const font = fontkit.create(fontBuffer);
   const charSet = font.characterSet;
@@ -26,7 +36,7 @@ function generateDynamicRangesFromFont(fontBuffer) {
   const minCP = Math.min(...charSet);
   const maxCP = Math.max(...charSet);
 
-  // Borne maxCP à 65535 pour éviter l'erreur
+  // Borne maxCP à 65535 pour éviter l'erreur 'end' must be <= 65535
   const limitedMax = Math.min(maxCP, 65535);
 
   const rangeSize = 256;
@@ -68,12 +78,11 @@ function walkDirectory(dir) {
 }
 
 function generateGlyphsFromFonts(srcDir, distDir) {
-  if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir, { recursive: true });
-  }
+  cleanDist(distDir);
+  fs.mkdirSync(distDir, { recursive: true });
 
   const fontFiles = walkDirectory(srcDir);
-  console.log(`Found ${fontFiles.length} font file(s) in "${srcDir}".`);
+  console.log(`\n📂 Found ${fontFiles.length} font file(s) in "${srcDir}".`);
 
   fontFiles.forEach((fontFile) => {
     console.log(`\n🔎 Processing: ${fontFile}`);
@@ -81,20 +90,19 @@ function generateGlyphsFromFonts(srcDir, distDir) {
 
     const dynamicRanges = generateDynamicRangesFromFont(fontData);
     if (dynamicRanges.length === 0) {
-      console.warn(`No codepoints found in this font. Skipping.`);
+      console.warn(`⚠️  No codepoints found in this font. Skipping.`);
       return;
     }
 
     const fontName = path.basename(fontFile, path.extname(fontFile));
     const fontDestDir = path.join(distDir, fontName);
-    if (!fs.existsSync(fontDestDir)) {
-      fs.mkdirSync(fontDestDir, { recursive: true });
-    }
+    fs.mkdirSync(fontDestDir, { recursive: true });
 
+    // Génération des blocs de glyphes
     dynamicRanges.forEach(([start, end]) => {
       fontnik.range({ font: fontData, start, end }, (err, pbf) => {
         if (err) {
-          console.error(`Error on range ${start}-${end} of ${fontFile}:`, err);
+          console.error(`❌ Error on range ${start}-${end} of ${fontFile}:`, err);
           return;
         }
         const outFile = path.join(fontDestDir, `${start}-${end}.pbf`);
