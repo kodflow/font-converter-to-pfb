@@ -6,6 +6,6 @@
     "build": "node generate-glyphs.js"
   },
   "dependencies": {
-    "@mapbox/node-fontnik": "^0.7.2"
+    "fontnik": "^0.7.2"
   }
 }
