@@ -2,9 +2,9 @@ name: Generate glyphs
 
 on:
   push:
-    #paths:
-    #  - 'src/**/*.ttf'
-    #  - 'src/**/*.otf'
+    paths:
+      - 'src/**/*.ttf'
+      - 'src/**/*.otf'
   workflow_dispatch:
 
 jobs:
@@ -27,3 +27,17 @@ jobs:
 
       - name: Generate glyph PBF
         run: npm run build
+
+      - name: Commit glyphs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: regenerate glyphs"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
