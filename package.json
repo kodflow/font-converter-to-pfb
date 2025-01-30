@@ -1,0 +1,11 @@
+{
+  "name": "font-converter-to-pfb",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "node generate-glyphs.js"
+  },
+  "dependencies": {
+    "@mapbox/node-fontnik": "^0.7.2"
+  }
+}
