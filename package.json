@@ -6,6 +6,7 @@
     "build": "node generate-glyphs.js"
   },
   "dependencies": {
-    "fontnik": "^0.7.2"
+    "fontnik": "^0.7.2",
+    "fontkit": "^2.0.4"
   }
 }
