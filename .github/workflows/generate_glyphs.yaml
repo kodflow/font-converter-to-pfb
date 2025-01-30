@@ -1,0 +1,29 @@
+name: Generate glyphs
+
+on:
+  push:
+    paths:
+      - 'src/**/*.ttf'
+      - 'src/**/*.otf'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # ou la version que vous préférez
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate glyph PBF
+        run: npm run build
