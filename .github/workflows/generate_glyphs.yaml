@@ -5,17 +5,20 @@ on:
     paths:
       - 'src/**/*.ttf'
       - 'src/**/*.otf'
+      - '.github/workflows/generate_glyphs.yaml'
   workflow_dispatch:
 
 jobs:
   build:
+    permissions:
+        contents: write
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Use Node.js
         uses: actions/setup-node@v4
