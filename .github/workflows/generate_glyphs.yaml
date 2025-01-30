@@ -2,9 +2,9 @@ name: Generate glyphs
 
 on:
   push:
-    paths:
-      - 'src/**/*.ttf'
-      - 'src/**/*.otf'
+    #paths:
+    #  - 'src/**/*.ttf'
+    #  - 'src/**/*.otf'
   workflow_dispatch:
 
 jobs:
