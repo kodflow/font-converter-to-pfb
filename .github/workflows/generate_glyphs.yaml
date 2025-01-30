@@ -6,6 +6,7 @@ on:
       - 'src/**/*.ttf'
       - 'src/**/*.otf'
       - '.github/workflows/generate_glyphs.yaml'
+      - 'generate_glyphs.js'
   workflow_dispatch:
 
 jobs:
