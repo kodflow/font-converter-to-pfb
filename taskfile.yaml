@@ -7,7 +7,7 @@ tasks:
 
   update:
     cmds:
-      - git rebase || true
+      - git pull --rebase || true
       - git add -A . || true
       - git commit -m "update" || true
       - git push || true
